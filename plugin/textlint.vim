@@ -52,7 +52,7 @@ function! s:TextLint(...)
     let l:each = -1
     while l:each < len(l:textlint_output)
         " locate next lint message, break if none
-        let l:each = match(l:textlint_output, s:detect_pattern, l:each)
+        let l:each = s:nextSuggestion(l:textlint_output, l:each)
         if l:each == -1
             break
         endif
@@ -75,12 +75,20 @@ function! s:TextLint(...)
         " continue looking on next line
         let l:each += 1
     endwhile
+    copen
 endfunction
 
+" returns the index of the next suggestion in TextLint's output
+function! s:nextSuggestion(lines, start_index)
+    return match(a:lines, s:detect_pattern, a:start_index)
+endfunction
+
+" returns the pattern for highlighting a suggestion in the text
 function! s:matchPattern(info)
     return '\%' . a:info['from line'] . 'l\%' . a:info['from column'] . 'c' . exerpt
 endfunction
 
+" builds a quickfix item
 function! s:qfItem(info, pattern)
     return {
         'bufnr':     bufnr(a:info['file name'])
@@ -90,15 +98,14 @@ function! s:qfItem(info, pattern)
     }
 endfunction
 
-"function! s:TextLint(...)
-    "setlocal errorformat=%f:%l.%c-%*[0-9.]:\ %m
-    "setlocal errorformat+=%+G\	%.%#
-    "setlocal errorformat+=%-G%.%#
-
-    "let l:file = a:0 == 0 ? expand('%:p') : getcwd() . '/' . a:1
-
-    "echo 'Running TextLint on ' . l:file . '...'
-    "cexpr system(s:cmd(l:file))
-    "copen
+"function! Test_nextSuggestion()
+"    call VUAssertEquals(
+"                \ s:nextSuggestion(['abc','/path/to/file.tex:42.24-42.51: foo', 'def'], 0),
+"                \ 1, 'First attempt')
+"    call VUAssertEquals(
+"                \ s:nextSuggestion(['abc','/path/to/file.tex:42.24-42.51: foo', 'def'], 1),
+"                \ 1, 'Already attempted first line')
+"    call VUAssertEquals(
+"                \ s:nextSuggestion(['abc','/path/to/file.tex:42.24-42.51: foo', 'def'], 2),
+"                \ -1, 'No more suggestions')
 "endfunction
-
